@@ -82,12 +82,20 @@ Ltac unroll_false_step H :=
     destruct H as [H | H]
   | _ = _ =>
     discriminate
+  | _ =>
+    congruence
   | False =>
     destruct H
   end.
 
 Tactic Notation "unroll" "in" hyp(H) :=
-  repeat (unroll_false_step H).
+  repeat (unroll_false_step H);
+  try match type of H with
+        (* clean up unfolding *)
+        _ ?x ?l =>
+        fold (In x l) in H
+      end.
+
 
 Example unroll_false_unit:
   ~ In 4 [1; 2; 3].
@@ -102,13 +110,19 @@ Ltac unroll_step :=
   | |- ~ In _ _ =>
     let H := fresh "Hunroll" in
     intro H; unroll in H
-  | |- In _ _ =>
+  | |- In _ (_ :: _) =>
     unfold In
   | |- _ \/ _  => left; refl
   | |- _ \/ _  => right
+  | |- _ => assumption
   end.
 
-Ltac unroll := repeat unroll_step.
+Ltac unroll :=
+  repeat unroll_step;
+  try match goal with
+        (* clean up unfolding *)
+        [ |- _ ?x ?l ] => fold (In x l)
+      end.
 
 Example unroll_not_unit:
   ~ In 4 [1; 2; 3].
@@ -134,4 +148,15 @@ Example unroll_forall_unit:
 Proof.
   intros e He.
   unroll in He; unroll.
+Qed.
+
+Example unroll_little_list_unit:
+  forall ls, forall e a : Set,
+    In e (a :: ls)
+    -> a <> e
+    -> In e ls.
+Proof.
+  intros ls e a Hin Hneq.
+  unroll in Hin.
+  assumption.
 Qed.
