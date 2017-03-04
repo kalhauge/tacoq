@@ -7,7 +7,7 @@ Ltac break_step H :=
   match type of H with
   (exists x, _) =>
     let x' := fresh x in
-    destruct H as [x H]
+    destruct H as [x' H]
   end.
 
 Ltac break H :=
